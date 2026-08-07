@@ -10,11 +10,13 @@ mkdir -p mocap4r2_ws/src && cd mocap4r2_ws/src
 ```
 Download optitrack repo:
 ```
-git clone https://github.com/MOCAP4ROS2-Project/mocap4ros2_optitrack.git
+git clone git@github.com:MarineRoboticsGroup/mocap4ros2_optitrack.git
 ```
 Install dependencies:
 ```
+cd ..
 rosdep install --from-paths src --ignore-src -r -y
+cd src
 vcs import < mocap4ros2_optitrack/dependency_repos.repos
 ```
 Compiling workspace:
