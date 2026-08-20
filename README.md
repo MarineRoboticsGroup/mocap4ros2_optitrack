@@ -27,6 +27,12 @@ Source workspace:
 ```
 source install/setup.bash
 ```
+Configure Motive networking:
+
+In Motive, open **Settings** and set **Local Interface** to the IP address of the
+network interface connected to the OptiTrack system (for example,
+`192.168.0.10`). Do not use the loopback address (`127.0.0.1`).
+
 Setup your optitrack configuration:
 ```
 mocap4r2_ws/src/mocap4ros2_optitrack/mocap4r2_optitrack_driver/config/mocap4r2_optitrack_driver_params.yaml
