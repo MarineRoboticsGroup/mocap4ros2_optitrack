@@ -170,7 +170,10 @@ OptitrackDriverNode::process_frame(sFrameOfMocapData * data)
     for (int i = 0; i < data->nRigidBodies; i++) {
       mocap4r2_msgs::msg::RigidBody rb;
 
-      rb.rigid_body_name = std::to_string(data->RigidBodies[i].ID);
+      const int32_t rigid_body_id = data->RigidBodies[i].ID;
+      const auto name = rigid_body_names_.find(rigid_body_id);
+      rb.rigid_body_name = name != rigid_body_names_.end() ?
+        name->second : std::to_string(rigid_body_id);
       rb.pose.position.x = data->RigidBodies[i].x;
       rb.pose.position.y = data->RigidBodies[i].y;
       rb.pose.position.z = data->RigidBodies[i].z;
@@ -294,6 +297,22 @@ OptitrackDriverNode::connect_optitrack()
 
     if (client->GetDataDescriptionList(&data_descriptions) != ErrorCode_OK || !data_descriptions) {
       RCLCPP_DEBUG(get_logger(), "[Client] Unable to retrieve Data Descriptions.\n");
+    } else {
+      rigid_body_names_.clear();
+      for (int i = 0; i < data_descriptions->nDataDescriptions; ++i) {
+        const sDataDescription & description = data_descriptions->arrDataDescriptions[i];
+        if (description.type != Descriptor_RigidBody ||
+          description.Data.RigidBodyDescription == nullptr)
+        {
+          continue;
+        }
+
+        const sRigidBodyDescription & rigid_body = *description.Data.RigidBodyDescription;
+        rigid_body_names_[rigid_body.ID] = rigid_body.szName;
+        RCLCPP_INFO(
+          get_logger(), "Discovered rigid body '%s' (streaming ID: %d)",
+          rigid_body.szName, rigid_body.ID);
+      }
     }
 
     RCLCPP_INFO(get_logger(), "\n[Client] Server application info:\n");
