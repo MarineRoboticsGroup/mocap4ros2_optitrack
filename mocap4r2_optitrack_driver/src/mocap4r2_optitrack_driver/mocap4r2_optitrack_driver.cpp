@@ -130,15 +130,20 @@ OptitrackDriverNode::process_frame(sFrameOfMocapData * data)
   frame_number_++;
   rclcpp::Duration frame_delay = rclcpp::Duration(get_optitrack_system_latency(data));
 
+  const bool publish_markers = mocap4r2_markers_pub_->get_subscription_count() > 0;
+  const bool publish_rigid_bodies = mocap4r2_rigid_body_pub_->get_subscription_count() > 0;
+
   std::map<int, std::vector<mocap4r2_msgs::msg::Marker>> marker2rb;
+  mocap4r2_msgs::msg::Markers msg;
 
   // Markers
-  if (mocap4r2_markers_pub_->get_subscription_count() > 0) {
-    mocap4r2_msgs::msg::Markers msg;
+  if (publish_markers) {
     msg.header.stamp = now() - frame_delay;
     msg.header.frame_id = "map";
     msg.frame_number = frame_number_;
+  }
 
+  if (publish_markers || publish_rigid_bodies) {
     for (int i = 0; i < data->nLabeledMarkers; i++) {
       bool Unlabeled = ((data->LabeledMarkers[i].params & 0x10) != 0);
       bool ActiveMarker = ((data->LabeledMarkers[i].params & 0x20) != 0);
@@ -153,15 +158,20 @@ OptitrackDriverNode::process_frame(sFrameOfMocapData * data)
       marker.translation.y = marker_data.y;
       marker.translation.z = marker_data.z;
       if (ActiveMarker || Unlabeled) {
-        msg.markers.push_back(marker);
-      } else {
+        if (publish_markers) {
+          msg.markers.push_back(marker);
+        }
+      } else if (publish_rigid_bodies) {
         marker2rb[modelID].push_back(marker);
       }
     }
+  }
+
+  if (publish_markers) {
     mocap4r2_markers_pub_->publish(msg);
   }
 
-  if (mocap4r2_rigid_body_pub_->get_subscription_count() > 0) {
+  if (publish_rigid_bodies) {
     mocap4r2_msgs::msg::RigidBodies msg_rb;
     msg_rb.header.stamp = now() - frame_delay;
     msg_rb.header.frame_id = "map";
